@@ -1,0 +1,161 @@
+<html>
+<head>
+<script>
+  
+  //Global Variables
+  var tabIds = new Array;
+  var tabScores = new Array;
+  var tabLives = new Array;
+  var deathRow = new Array;
+  var killZone = 0; //To indicate when changing the selected tab saves the tab.
+  var clicked = 0; //To prevent repetitive SmartKill clicks;
+  
+  //Part One: Unimportant tab identification
+  function kill() {
+  	if (clicked == 1) return;
+	clicked = 1;
+	
+  	 //getting user settings
+  	 var setting = localStorage["setting"], config;
+	 if (!setting) setting = 1;
+	 
+	 if (setting == 0) config = 10;
+	 else if (setting == 2) config = 0;
+	 else config = 5;
+  	
+	 chrome.tabs.getAllInWindow(null, function (tabs) {	
+ 		for (var i = tabs.length -1; i >= 0; i--) {
+ 			var tab = tabs[i];
+ 			if (tab.selected || tab.pinned) continue;
+ 			var index = tabIds.indexOf(tab.id); 
+ 			 
+ 			//Remove less-important pages
+ 			if (tabScores[index] < 0 && timeDiff(tabLives[index]) > config && tab.url.indexOf('chrome://') == -1) deathRow[deathRow.length] = tab;
+ 		}
+ 		if (deathRow.length > 0) attemptKill();
+		else clicked = 0;
+     });
+  }
+  
+  //Part Two: Marking for deletion
+  function attemptKill(){
+	for (var i = 0; i < deathRow.length; i++){
+		var tab = deathRow[i];
+		chrome.tabs.executeScript(tab.id, {code:"document.title = '**' + document.title + '**'"});	
+	}
+	
+  	killZone = 1; //changes the "mode" to let the user rescue tabs
+  	setTimeout("end();", 7000); //7 minutes(?)
+  }
+  
+  //Part Three: deletion of unwanted tabs
+  function end() {
+  	for (var i = deathRow.length-1; i >= 0; i--){
+  		chrome.tabs.remove(deathRow[i].id);
+  	}
+  	deathRow = [];
+  	killZone = 0; 
+    clicked = 0;
+  }
+  
+  //updates the "score" of a tab in the database
+  function resetVals(index) {
+     //getting user settings
+  	 var setting = localStorage["setting"], fullScore;
+	 if (!setting) setting = 1;
+	 
+	 if (setting == 0) fullScore = 50;
+	 else if (setting == 2) fullScore = 10;
+	 else fullScore = 25;
+  
+   	tabScores[index] = fullScore;
+  	var time = new Date();
+  	tabLives[index] = time;
+  }
+  
+  //finds the difference (in minutes) between a given time and now 
+  function timeDiff(then) {
+  	var now = new Date();
+ 	var diff = now.getTime() - then.getTime();
+  	return diff/60000;
+  }
+  
+  //comparing database to actual tab situation
+  function update(){
+  	chrome.tabs.getAllInWindow(null, function (tabs){
+  		for (var i = 0; i < tabs.length; i++){
+  			if (tabIds.indexOf(tabs[i].id) == -1) add(tabs[i].id);
+  		}
+  	});
+  }
+  
+  //adding new tab to database
+  function add(tabId) {
+  	var index = tabIds.length;
+  	tabIds[index] = tabId;
+  	resetVals(index);
+  }
+  
+  //removing a tab from database
+  function remove(tabId) {
+  	var index = tabIds.indexOf(tabId);
+	if (index == -1) return;
+  	var length = tabIds.length;
+  	while (index < length) { //length-1
+  		tabIds[index]=tabIds[index+1];
+  		tabScores[index]=tabScores[index+1];
+  		tabLives[index]=tabLives[index+1];
+  		index++;
+  	}
+  	tabIds.pop();
+  	tabScores.pop();
+  	tabLives.pop();
+  }
+
+  //browser clicked
+  chrome.browserAction.onClicked.addListener(kill);
+  
+  //tab created
+  chrome.tabs.onCreated.addListener(function (tab){
+	add(tab.id);
+  });
+  
+  //tab removed
+  chrome.tabs.onRemoved.addListener(function (tabId){
+	remove(tabId);
+  });
+  
+  //selecion changed
+  chrome.tabs.onSelectionChanged.addListener(function (tabId,selectInfo) {
+  	var index = -1;
+  	for (var i = 0; i < tabIds.length; i++) {
+  		if (tabIds[i] == tabId) {
+  			tabScores[i]++;
+  			index = i;
+  		}
+  		else tabScores[i]--;
+  	}
+
+	//tab rescue mode
+  	if (killZone == 1) {
+  		for (var i = 0; i < deathRow.length; i++) {
+  			if (deathRow[i].id == tabId) {
+  				var tab = deathRow[i];
+  				while (i < deathRow.length) {//length-1
+  					deathRow[i] = deathRow[i+1];
+  					i++;
+  				}
+  				deathRow.pop();
+  		  		
+				resetVals(index);
+  		  		chrome.tabs.executeScript(tab.id, {code:"setTimeout('document.title = document.title.substring(2,document.title.length-2)',100);"}); //WHY SETTIMEOUT
+  		  		break;
+  			}
+  		}
+  	}
+  });
+  
+  window.onload=update; //for adding the first tab to the database
+</script>
+</head>
+</html>

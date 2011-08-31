@@ -1,0 +1,61 @@
+<html>
+<head><title>Smart Tab Killer Options</title>
+<link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-1.1.1.min.css">
+<script type="text/javascript">
+
+// Saves options to localStorage.
+function save_options() {
+  var selection = document.myForm.settingRadio;
+  var setting = 1;
+  for (var i = 0; i < selection.length; i++) {
+	if (selection[i].checked) {
+		setting = i;
+		break;
+	}
+  }
+  localStorage["setting"] = setting;
+  
+  // Update status to let user know options were saved.
+  var status = document.getElementById("status");
+  status.innerHTML = "<p/><p/><p/>Options <b>Saved</b>.";
+  setTimeout(function() {
+    status.innerHTML = "";
+  }, 1000);
+}
+
+// Restores select box state to saved value from localStorage.
+function restore_options() {
+  var setting = localStorage["setting"];
+  if (!setting) setting = 1;
+  document.getElementById(setting).checked = true;
+  
+}
+
+</script>
+</head>
+
+<body onload="restore_options()"><center>
+
+<div id="top">
+<p/><h1><font color="#0391d9">Smart Tab Killer</font> Options</h1>
+</div>
+
+<div id="middle">
+<h6>Ferocity:</h6>
+<form id="myForm" name="myForm">
+<input type="radio" id="0" name="settingRadio" value="Safe">&nbsp;<font style="font-size:16px;">Safe</font>&nbsp;&nbsp;
+<input type="radio" id="1" name="settingRadio" value="Moderate">&nbsp;<font style="font-size:16px;">Moderate</font>&nbsp;&nbsp;
+<input type="radio" id="2" name="settingRadio" value="Aggresive">&nbsp;<font style="font-size:16px;">Aggressive</font>
+</form>
+</div>
+
+<div id="bottom">
+<button onclick="save_options()"  class="btn primary">Save</button>
+</div>
+
+<div id="status" style="text-align:center;">
+<!--Temporary Output-->
+</div>
+
+</center></body>
+</html>

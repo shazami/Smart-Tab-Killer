@@ -1,0 +1,18 @@
+{
+  "name": "Smart Tab Killer BETA",
+  "description": "Smart Tab Killer reads your mind to remove unwanted tabs with one click.",
+  "version": "0.9",
+  "background_page": "background.html",
+  "options_page": "options.html",
+  "permissions": [
+    "tabs", 
+	"http://*/",
+	"https://*/"
+  ],
+  "browser_action": {
+	  "default_icon": "icon.png"
+  },
+  "icons": {    "48": "icon48.png",
+				"128": "icon128.png"
+  }
+}
